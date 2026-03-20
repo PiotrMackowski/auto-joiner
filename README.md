@@ -14,8 +14,10 @@ On first run, macOS will ask you to grant Calendar access — say yes.
 
 ## What it does
 
-- Polls your macOS Calendar every 5 minutes
+- Polls your macOS Calendar every minute
 - When a meeting with a Zoom link is about to start, opens it via `zoommtg://` deep link
+- Joins 1 minute early so you're always on time
+- Looks back 30 minutes for late invites — if someone sends an invite after the meeting started, it still joins
 - Skips meetings matching configurable keywords (e.g. "focus time", "lunch")
 - Won't interrupt an ongoing meeting — if you're already in a call, it waits
 - Tracks which meetings it already joined today so it doesn't rejoin
@@ -40,9 +42,10 @@ tail -f ~/.zoom-autojoiner/autojoiner.log
 Edit `~/zoom-autojoiner/config.yaml`:
 
 ```yaml
-join_early_minutes: 0        # 0 = join right on time
-poll_interval_minutes: 5     # how often to check calendar
+join_early_minutes: 1        # join 1 minute before start
+poll_interval_minutes: 1     # how often to check calendar
 lookahead_minutes: 30        # how far ahead to look
+lookback_minutes: 30         # how far back to look (late invites)
 skip_keywords:               # skip meetings with these words
   - "focus time"
   - "lunch"
@@ -65,3 +68,7 @@ rm -rf ~/zoom-autojoiner ~/.zoom-autojoiner
 - Python 3.9+
 - Zoom desktop app installed
 - Calendar synced via System Settings > Internet Accounts
+
+## Limitations
+
+- macOS syncs calendars every 5–15 minutes (hardcoded by Apple, not configurable). If someone sends a last-minute invite, it may take up to 15 minutes before macOS pulls it down. The 30-minute lookback window compensates for this. You can force a sync in Calendar.app with `Cmd+Shift+R`.
