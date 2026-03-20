@@ -223,9 +223,15 @@ def check_and_join(store, config: dict):
 def run(config: dict):
     store = get_store()
     interval = config.get("poll_interval_minutes", 5) * 60
+    store_refresh = 0
     log.info("Started (poll %ds, early %dm)", interval, config.get("join_early_minutes", 0))
     while True:
         try:
+            # Refresh EventKit store every hour to avoid stale handles
+            store_refresh += interval
+            if store_refresh >= 3600:
+                store = get_store()
+                store_refresh = 0
             check_and_join(store, config)
         except KeyboardInterrupt:
             raise
