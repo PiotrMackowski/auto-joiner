@@ -1,10 +1,10 @@
 # Zoom Auto-Joiner Configuration
 
 # How many minutes before the meeting to join (0 = right on time)
-join_early_minutes: 0
+join_early_minutes: 1
 
 # How often to poll for new events (in minutes)
-poll_interval_minutes: 5
+poll_interval_minutes: 1
 
 # How far ahead to look for meetings (in minutes)
 lookahead_minutes: 30

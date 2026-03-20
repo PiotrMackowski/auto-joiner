@@ -181,6 +181,8 @@ def check_and_join(store, config: dict):
     # Fetch with extra window to detect ongoing meetings
     events = fetch_events(store, lookahead_min=max(lookahead, 60))
     joined = get_joined_today()
+    zoom_events = [e for e in events if find_zoom_url(e)]
+    log.info("Poll: %d events, %d with Zoom links", len(events), len(zoom_events))
 
     # Don't interrupt an ongoing meeting
     if is_in_meeting(events, now):
@@ -208,6 +210,9 @@ def check_and_join(store, config: dict):
             subprocess.run(["open", join_link], capture_output=True)
             mark_joined(ev["id"])
             return  # only join one meeting at a time
+        else:
+            wait = (join_at - now).total_seconds()
+            log.info("Waiting: %s (in %.0f min)", ev["title"], wait / 60)
 
 
 def run(config: dict):
