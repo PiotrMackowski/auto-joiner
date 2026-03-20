@@ -24,8 +24,10 @@ echo "Setting up Python environment..."
 python3 -m venv "$INSTALL_DIR/venv"
 "$INSTALL_DIR/venv/bin/pip" install -q -r "$INSTALL_DIR/requirements.txt"
 
-# State dir
+# State dir (owner-only access)
 mkdir -p "$HOME/.zoom-autojoiner"
+chmod 700 "$HOME/.zoom-autojoiner"
+chmod 600 "$INSTALL_DIR/config.yaml"
 
 # Fix paths in plist to match this machine
 sed "s|/Users/piotr.mackowski|$HOME|g" "$INSTALL_DIR/$PLIST_NAME" > "$HOME/Library/LaunchAgents/$PLIST_NAME"

@@ -164,8 +164,9 @@ def is_in_meeting(events: list[dict], now: datetime.datetime) -> bool:
 
 def notify(msg: str):
     try:
+        safe = msg.replace("\\", "\\\\").replace('"', '\\"')
         subprocess.run(
-            ["osascript", "-e", f'display notification "{msg}" with title "Zoom Auto-Joiner"'],
+            ["osascript", "-e", f'display notification "{safe}" with title "Zoom Auto-Joiner"'],
             capture_output=True, timeout=5,
         )
     except Exception:
