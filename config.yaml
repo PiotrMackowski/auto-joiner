@@ -1,0 +1,27 @@
+# Zoom Auto-Joiner Configuration
+
+# How many minutes before the meeting to join (0 = right on time)
+join_early_minutes: 0
+
+# How often to poll for new events (in minutes)
+poll_interval_minutes: 5
+
+# How far ahead to look for meetings (in minutes)
+lookahead_minutes: 30
+
+# Keywords to skip meetings that match (case-insensitive)
+# e.g., skip "Focus Time" blocks or "Lunch"
+skip_keywords:
+  - "focus time"
+  - "lunch"
+  - "blocked"
+  - "OOO"
+
+# Only join meetings that have a Zoom link (recommended: true)
+zoom_only: true
+
+# Show macOS notification before joining
+notify_before_join: true
+
+# Log file location
+log_file: "~/.zoom-autojoiner/autojoiner.log"

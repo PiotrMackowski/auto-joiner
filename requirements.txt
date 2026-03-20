@@ -1,0 +1,2 @@
+pyobjc-framework-EventKit>=10.0
+PyYAML>=6.0
