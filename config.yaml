@@ -9,6 +9,10 @@ poll_interval_minutes: 1
 # How far ahead to look for meetings (in minutes)
 lookahead_minutes: 30
 
+# How far back to look for meetings already started (in minutes)
+# Useful for late invites — joins meetings that started up to this many minutes ago
+lookback_minutes: 30
+
 # Keywords to skip meetings that match (case-insensitive)
 # e.g., skip "Focus Time" blocks or "Lunch"
 skip_keywords:

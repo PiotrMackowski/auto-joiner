@@ -67,12 +67,13 @@ def get_store() -> EventKit.EKEventStore:
     return store
 
 
-def fetch_events(store, lookahead_min: int = 30) -> list[dict]:
+def fetch_events(store, lookahead_min: int = 30, lookback_min: int = 0) -> list[dict]:
     now = Foundation.NSDate.date()
+    start = Foundation.NSDate.dateWithTimeIntervalSinceNow_(-lookback_min * 60)
     end = Foundation.NSDate.dateWithTimeIntervalSinceNow_(lookahead_min * 60)
     calendars = store.calendarsForEntityType_(EventKit.EKEntityTypeEvent)
     pred = store.predicateForEventsWithStartDate_endDate_calendars_(
-        now, end, calendars
+        start, end, calendars
     )
     raw = store.eventsMatchingPredicate_(pred) or []
 
@@ -174,12 +175,13 @@ def notify(msg: str):
 def check_and_join(store, config: dict):
     now = datetime.datetime.now(datetime.timezone.utc)
     lookahead = config.get("lookahead_minutes", 30)
+    lookback = config.get("lookback_minutes", 30)
     join_early = config.get("join_early_minutes", 0)
     skip_kw = [k.lower() for k in config.get("skip_keywords", [])]
     do_notify = config.get("notify_before_join", True)
 
-    # Fetch with extra window to detect ongoing meetings
-    events = fetch_events(store, lookahead_min=max(lookahead, 60))
+    # Fetch with lookback (late invites) and extra lookahead (ongoing detection)
+    events = fetch_events(store, lookahead_min=max(lookahead, 60), lookback_min=lookback)
     joined = get_joined_today()
     zoom_events = [e for e in events if find_zoom_url(e)]
     log.info("Poll: %d events, %d with Zoom links", len(events), len(zoom_events))
@@ -193,6 +195,8 @@ def check_and_join(store, config: dict):
     for ev in events:
         if ev["id"] in joined:
             continue
+        if ev["end"] <= now:
+            continue  # already ended
         if any(kw in ev["title"].lower() for kw in skip_kw):
             continue
 
@@ -240,7 +244,7 @@ if __name__ == "__main__":
 
     if cmd == "check":
         store = get_store()
-        events = fetch_events(store, config.get("lookahead_minutes", 30))
+        events = fetch_events(store, config.get("lookahead_minutes", 30), config.get("lookback_minutes", 30))
         if not events:
             print("No upcoming events.")
         for ev in events:
@@ -253,7 +257,7 @@ if __name__ == "__main__":
 
     elif cmd == "join-next":
         store = get_store()
-        events = fetch_events(store, config.get("lookahead_minutes", 30))
+        events = fetch_events(store, config.get("lookahead_minutes", 30), config.get("lookback_minutes", 30))
         skip_kw = [k.lower() for k in config.get("skip_keywords", [])]
         for ev in events:
             if any(kw in ev["title"].lower() for kw in skip_kw):
