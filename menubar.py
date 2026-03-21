@@ -61,7 +61,7 @@ class ZoomAutoJoiner(rumps.App):
     def __init__(self):
         super().__init__(
             name="Zoom Auto-Joiner",
-            title="⏳",
+            title="📅",
             quit_button=None,
         )
 
@@ -101,10 +101,6 @@ class ZoomAutoJoiner(rumps.App):
         # Background: init EventKit store + first fetch
         self._init_thread = threading.Thread(target=self._init_store, daemon=True)
         self._init_thread.start()
-
-        # Timer: update countdown every second
-        self._countdown_timer = rumps.Timer(self._tick, 1)
-        self._countdown_timer.start()
 
         # Timer: poll calendar every poll_interval
         interval = self.config.get("poll_interval_minutes", 1) * 60
@@ -168,6 +164,7 @@ class ZoomAutoJoiner(rumps.App):
                 self.meetings = zoom_meetings
 
             self._rebuild_menu()
+            self._update_status()
             log.info("Refreshed: %d zoom meetings", len(zoom_meetings))
         except Exception:
             log.exception("Error refreshing meetings")
@@ -220,8 +217,8 @@ class ZoomAutoJoiner(rumps.App):
 
     # --- Timers ---
 
-    def _tick(self, timer):
-        """Update countdown in menu bar title every second."""
+    def _update_status(self):
+        """Update menu bar icon and next-meeting info."""
         with self._lock:
             meetings = list(self.meetings)
 
@@ -242,11 +239,8 @@ class ZoomAutoJoiner(rumps.App):
             self.next_item.title = f"NOW: {next_ev['title']}"
             if self.autojoin_enabled:
                 self._join_meeting(next_ev)
-        elif seconds_until <= 300:  # 5 min
-            self.title = f"⚡ {_format_countdown(seconds_until)}"
-            self.next_item.title = f"Next: {next_ev['title']} in {_format_countdown(seconds_until)}"
         else:
-            self.title = f"⏳ {_format_countdown(seconds_until)}"
+            self.title = "📅"
             self.next_item.title = f"Next: {next_ev['title']} in {_format_countdown(seconds_until)}"
 
     def _poll(self, timer):
@@ -254,6 +248,7 @@ class ZoomAutoJoiner(rumps.App):
         self._refresh_store_if_stale()
         thread = threading.Thread(target=self._refresh_meetings, daemon=True)
         thread.start()
+        self._update_status()
 
     # --- Actions ---
 

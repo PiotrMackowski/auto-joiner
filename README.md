@@ -27,14 +27,14 @@ On first run, macOS will ask you to grant Calendar access — say yes.
 
 ## Menu Bar
 
-The menu bar icon shows a live countdown — no need to click:
+The menu bar shows a static icon — no distracting timers:
 
-- ⏳ 12m 30s — next meeting is more than 5 minutes away
-- ⚡ 2m 15s — next meeting is less than 5 minutes away
-- 🔴 — meeting is starting now
+- 📅 — you have upcoming meetings
+- 🔴 — a meeting is starting now
 - ☁️ — no upcoming meetings
 
 Click the icon for:
+- **Next meeting** with countdown
 - **Toggle auto-join** on/off
 - **Skip meetings** individually
 - **Upcoming meetings list** with times
