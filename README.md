@@ -2,7 +2,7 @@
 
 Automatically joins your Zoom meetings on macOS. Reads your local macOS Calendar (works with Google Calendar synced via System Settings > Internet Accounts), watches for upcoming meetings with Zoom links, and opens them at the right time.
 
-No Google Cloud API keys needed. No browser extensions. Just a Python script and a launchd daemon.
+No Google Cloud API keys needed. No browser extensions. Just a Python script and a launchd daemon. Optional menu bar app for at-a-glance meeting status.
 
 ## Install
 
@@ -23,6 +23,24 @@ On first run, macOS will ask you to grant Calendar access — say yes.
 - Tracks which meetings it already joined today so it doesn't rejoin
 - Sends a macOS notification before joining
 - Runs as a launchd daemon — starts on login, restarts on crash
+
+## Menu Bar App
+
+Run the menu bar app instead of (or alongside) the daemon for a visual interface:
+
+```bash
+~/zoom-autojoiner/venv/bin/python3 ~/zoom-autojoiner/menubar.py
+```
+
+Features:
+- **Live countdown** in the menu bar (⏳ 12m 30s → ⚡ 2m 15s → 🔴 when live)
+- **Toggle auto-join** on/off with a checkbox
+- **Skip meetings** individually from the dropdown
+- **Upcoming meetings list** with times and Zoom links
+- **Refresh** to re-poll your calendar on demand
+- **Open Logs** to view the log file
+
+The menu bar app uses the same config and state as the daemon — they share `config.yaml`, joined/skipped tracking, and logs.
 
 ## Usage
 
@@ -52,6 +70,8 @@ skip_keywords:               # skip meetings with these words
   - "blocked"
   - "OOO"
 notify_before_join: true     # macOS notification before joining
+zoom_only: true              # only auto-join meetings with Zoom links
+log_file: "~/.zoom-autojoiner/autojoiner.log"  # log file path
 ```
 
 ## Uninstall

@@ -20,14 +20,21 @@ CONFIG_PATH = Path(__file__).parent / "config.yaml"
 STATE_DIR = Path.home() / ".zoom-autojoiner"
 JOINED_FILE = STATE_DIR / "joined_today.txt"
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(STATE_DIR / "autojoiner.log"),
-    ],
-)
+
+def _setup_logging(config: dict):
+    log_file = config.get("log_file", "~/.zoom-autojoiner/autojoiner.log")
+    log_path = Path(log_file).expanduser()
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.StreamHandler(),
+            logging.FileHandler(log_path),
+        ],
+    )
+
+
 log = logging.getLogger("autojoiner")
 
 ZOOM_URL_RE = re.compile(
@@ -202,17 +209,22 @@ def check_and_join(store, config: dict):
             continue
 
         zoom_url = find_zoom_url(ev)
-        if not zoom_url:
+        if not zoom_url and config.get("zoom_only", True):
             continue
 
         join_at = ev["start"] - datetime.timedelta(minutes=join_early)
         if now >= join_at:
-            join_link = to_zoommtg(zoom_url)
-            log.info("Joining: %s -> %s", ev["title"], join_link)
-            if do_notify:
-                notify(f"Joining: {ev['title']}")
-                time.sleep(1)
-            subprocess.run(["open", join_link], capture_output=True)
+            if zoom_url:
+                join_link = to_zoommtg(zoom_url)
+                log.info("Joining: %s -> %s", ev["title"], join_link)
+                if do_notify:
+                    notify(f"Joining: {ev['title']}")
+                    time.sleep(1)
+                subprocess.run(["open", join_link], capture_output=True)
+            else:
+                log.info("Meeting time: %s (no Zoom link)", ev["title"])
+                if do_notify:
+                    notify(f"Meeting starting: {ev['title']}")
             mark_joined(ev["id"])
             return  # only join one meeting at a time
         else:
@@ -247,6 +259,7 @@ if __name__ == "__main__":
 
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     config = load_config()
+    _setup_logging(config)
     cmd = sys.argv[1] if len(sys.argv) > 1 else "run"
 
     if cmd == "check":
