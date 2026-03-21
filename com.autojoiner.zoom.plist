@@ -8,8 +8,7 @@
     <key>ProgramArguments</key>
     <array>
         <string>/Users/piotr.mackowski/zoom-autojoiner/venv/bin/python3</string>
-        <string>/Users/piotr.mackowski/zoom-autojoiner/autojoiner.py</string>
-        <string>run</string>
+        <string>/Users/piotr.mackowski/zoom-autojoiner/menubar.py</string>
     </array>
 
     <key>WorkingDirectory</key>
