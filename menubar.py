@@ -91,6 +91,7 @@ class ZoomAutoJoiner(rumps.App):
             # Dynamic meeting items inserted here
             None,
             rumps.MenuItem("Refresh", callback=self.on_refresh),
+            rumps.MenuItem("Edit Config", callback=self.on_edit_config),
             rumps.MenuItem("Open Logs", callback=self.on_open_logs),
             None,
             rumps.MenuItem("Quit", callback=self.on_quit),
@@ -291,6 +292,9 @@ class ZoomAutoJoiner(rumps.App):
         self.config = load_config()
         thread = threading.Thread(target=self._refresh_meetings, daemon=True)
         thread.start()
+
+    def on_edit_config(self, _):
+        subprocess.run(["open", "-t", str(CONFIG_PATH)], capture_output=True)
 
     def on_open_logs(self, _):
         log_file = self.config.get("log_file", "~/.zoom-autojoiner/autojoiner.log")
