@@ -61,7 +61,7 @@ class ZoomAutoJoiner(rumps.App):
     def __init__(self):
         super().__init__(
             name="Zoom Auto-Joiner",
-            title="⏳",
+            title="📅",
             quit_button=None,
         )
 
@@ -69,7 +69,8 @@ class ZoomAutoJoiner(rumps.App):
         self.store = None
         self.meetings = []  # upcoming zoom meetings
         self.autojoin_enabled = True
-        self._store_age = 0
+        self._store_refreshed_at = time.monotonic()
+        self._dynamic_keys: list[str] = []
         self._lock = threading.Lock()
 
         # Menu items
@@ -101,10 +102,6 @@ class ZoomAutoJoiner(rumps.App):
         self._init_thread = threading.Thread(target=self._init_store, daemon=True)
         self._init_thread.start()
 
-        # Timer: update countdown every second
-        self._countdown_timer = rumps.Timer(self._tick, 1)
-        self._countdown_timer.start()
-
         # Timer: poll calendar every poll_interval
         interval = self.config.get("poll_interval_minutes", 1) * 60
         self._poll_timer = rumps.Timer(self._poll, interval)
@@ -122,16 +119,15 @@ class ZoomAutoJoiner(rumps.App):
                 "Calendar Access Required",
                 "Grant access in System Settings > Privacy & Security > Calendars",
             )
-        except Exception as e:
+        except Exception:
             log.exception("Failed to init EventKit store")
 
     def _refresh_store_if_stale(self):
         """Recreate EventKit store every hour to avoid stale handles."""
-        self._store_age += 1
-        if self._store_age >= 3600:
+        if time.monotonic() - self._store_refreshed_at >= 3600:
             try:
                 self.store = get_store()
-                self._store_age = 0
+                self._store_refreshed_at = time.monotonic()
             except Exception:
                 log.exception("Failed to refresh store")
 
@@ -168,28 +164,28 @@ class ZoomAutoJoiner(rumps.App):
                 self.meetings = zoom_meetings
 
             self._rebuild_menu()
+            self._update_status()
             log.info("Refreshed: %d zoom meetings", len(zoom_meetings))
         except Exception:
             log.exception("Error refreshing meetings")
 
     def _rebuild_menu(self):
         """Rebuild the dynamic meeting items in the menu."""
-        # Remove old dynamic items (between separator and the next None)
-        keys_to_remove = []
-        for key in self.menu.keys():
-            if key.startswith("  ") or key.startswith("→ Skip:"):
-                keys_to_remove.append(key)
-        for key in keys_to_remove:
+        # Remove old dynamic items
+        for key in self._dynamic_keys:
             if key in self.menu:
                 del self.menu[key]
+        self._dynamic_keys.clear()
 
         with self._lock:
             meetings = list(self.meetings)
 
         if not meetings:
-            item = rumps.MenuItem("  No Zoom meetings")
+            title = "  No Zoom meetings"
+            item = rumps.MenuItem(title)
             item.set_callback(None)
             self.menu.insert_after(self.upcoming_separator.title, item)
+            self._dynamic_keys.append(title)
         else:
             # Insert in reverse so they appear in correct order after separator
             for ev in reversed(meetings[:8]):
@@ -207,6 +203,7 @@ class ZoomAutoJoiner(rumps.App):
 
                 self.menu.insert_after(self.upcoming_separator.title, skip_item)
                 self.menu.insert_after(self.upcoming_separator.title, meeting_item)
+                self._dynamic_keys.extend([title, skip_title])
 
     def _make_skip_cb(self, ev):
         """Create a callback to skip a specific meeting."""
@@ -220,8 +217,8 @@ class ZoomAutoJoiner(rumps.App):
 
     # --- Timers ---
 
-    def _tick(self, timer):
-        """Update countdown in menu bar title every second."""
+    def _update_status(self):
+        """Update menu bar icon and next-meeting info."""
         with self._lock:
             meetings = list(self.meetings)
 
@@ -242,11 +239,8 @@ class ZoomAutoJoiner(rumps.App):
             self.next_item.title = f"NOW: {next_ev['title']}"
             if self.autojoin_enabled:
                 self._join_meeting(next_ev)
-        elif seconds_until <= 300:  # 5 min
-            self.title = f"⚡ {_format_countdown(seconds_until)}"
-            self.next_item.title = f"Next: {next_ev['title']} in {_format_countdown(seconds_until)}"
         else:
-            self.title = f"⏳ {_format_countdown(seconds_until)}"
+            self.title = "📅"
             self.next_item.title = f"Next: {next_ev['title']} in {_format_countdown(seconds_until)}"
 
     def _poll(self, timer):
@@ -254,6 +248,7 @@ class ZoomAutoJoiner(rumps.App):
         self._refresh_store_if_stale()
         thread = threading.Thread(target=self._refresh_meetings, daemon=True)
         thread.start()
+        self._update_status()
 
     # --- Actions ---
 

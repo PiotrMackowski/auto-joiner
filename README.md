@@ -2,7 +2,7 @@
 
 Automatically joins your Zoom meetings on macOS. Reads your local macOS Calendar (works with Google Calendar synced via System Settings > Internet Accounts), watches for upcoming meetings with Zoom links, and opens them at the right time.
 
-No Google Cloud API keys needed. No browser extensions. Just a Python script and a launchd daemon. Optional menu bar app for at-a-glance meeting status.
+No Google Cloud API keys needed. No browser extensions. Just a Python script and a menu bar app that starts on login and restarts on crash.
 
 ## Install
 
@@ -14,6 +14,7 @@ On first run, macOS will ask you to grant Calendar access — say yes.
 
 ## What it does
 
+- Lives in your menu bar with a live countdown to your next meeting
 - Polls your macOS Calendar every minute
 - When a meeting with a Zoom link is about to start, opens it via `zoommtg://` deep link
 - Joins 1 minute early so you're always on time
@@ -22,25 +23,24 @@ On first run, macOS will ask you to grant Calendar access — say yes.
 - Won't interrupt an ongoing meeting — if you're already in a call, it waits
 - Tracks which meetings it already joined today so it doesn't rejoin
 - Sends a macOS notification before joining
-- Runs as a launchd daemon — starts on login, restarts on crash
+- Starts on login, restarts on crash (launchd)
 
-## Menu Bar App
+## Menu Bar
 
-Run the menu bar app instead of (or alongside) the daemon for a visual interface:
+The menu bar shows a static icon — no distracting timers:
 
-```bash
-~/zoom-autojoiner/venv/bin/python3 ~/zoom-autojoiner/menubar.py
-```
+- 📅 — you have upcoming meetings
+- 🔴 — a meeting is starting now
+- ☁️ — no upcoming meetings
 
-Features:
-- **Live countdown** in the menu bar (⏳ 12m 30s → ⚡ 2m 15s → 🔴 when live)
-- **Toggle auto-join** on/off with a checkbox
-- **Skip meetings** individually from the dropdown
-- **Upcoming meetings list** with times and Zoom links
-- **Refresh** to re-poll your calendar on demand
+Click the icon for:
+- **Next meeting** with countdown
+- **Toggle auto-join** on/off
+- **Skip meetings** individually
+- **Upcoming meetings list** with times
+- **Refresh** to re-poll your calendar
+- **Edit Config** to open config.yaml in your default text editor
 - **Open Logs** to view the log file
-
-The menu bar app uses the same config and state as the daemon — they share `config.yaml`, joined/skipped tracking, and logs.
 
 ## Usage
 
@@ -57,7 +57,7 @@ tail -f ~/.zoom-autojoiner/autojoiner.log
 
 ## Config
 
-Edit `~/zoom-autojoiner/config.yaml`:
+Edit `~/zoom-autojoiner/config.yaml` (or use Edit Config in the menu bar):
 
 ```yaml
 join_early_minutes: 1        # join 1 minute before start

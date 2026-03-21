@@ -37,10 +37,10 @@ launchctl unload "$HOME/Library/LaunchAgents/$PLIST_NAME" 2>/dev/null || true
 launchctl load "$HOME/Library/LaunchAgents/$PLIST_NAME"
 
 echo ""
-echo "Done. The auto-joiner is running."
+echo "Done. The menu bar app is running (look for ⏳ in your menu bar)."
 echo ""
 echo "On first run macOS will ask for Calendar access — grant it."
-echo "Edit $INSTALL_DIR/config.yaml to change settings."
+echo "Edit $INSTALL_DIR/config.yaml to change settings (or use Edit Config in the menu bar)."
 echo ""
 echo "Commands:"
 echo "  $INSTALL_DIR/venv/bin/python3 $INSTALL_DIR/autojoiner.py check      # see upcoming meetings"
