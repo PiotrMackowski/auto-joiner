@@ -177,7 +177,7 @@ def is_in_meeting(events: list[dict], now: datetime.datetime) -> bool:
     """Check if we're currently inside a meeting we already joined."""
     joined = get_joined_today()
     for ev in events:
-        if ev["id"] in joined and ev["start"] <= now < ev["end"]:
+        if ev["id"] in joined and ev["start"] <= now <= ev["end"]:
             zoom = find_zoom_url(ev)
             if zoom:
                 return True
