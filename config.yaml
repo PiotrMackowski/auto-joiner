@@ -27,5 +27,9 @@ zoom_only: true
 # Show macOS notification before joining
 notify_before_join: true
 
+# Skip tentative/maybe meetings (default: false = join them)
+# Can also be toggled from the menu bar
+skip_tentative: false
+
 # Log file location
 log_file: "~/.zoom-autojoiner/autojoiner.log"
