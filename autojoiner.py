@@ -88,6 +88,14 @@ def fetch_events(store, lookahead_min: int = 30, lookback_min: int = 0) -> list[
     for e in raw:
         if e.isAllDay():
             continue
+        # Skip declined meetings
+        declined = False
+        for a in (e.attendees() or []):
+            if a.isCurrentUser() and a.participantStatus() == EventKit.EKParticipantStatusDeclined:
+                declined = True
+                break
+        if declined:
+            continue
         events.append(
             {
                 "id": str(e.eventIdentifier() or ""),
