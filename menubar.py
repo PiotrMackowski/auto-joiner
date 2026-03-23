@@ -238,7 +238,7 @@ class ZoomAutoJoiner(rumps.App):
             self.title = "🔴"
             self.next_item.title = f"NOW: {next_ev['title']}"
             if self.autojoin_enabled:
-                self._join_meeting(next_ev)
+                threading.Thread(target=self._join_meeting, args=(next_ev,), daemon=True).start()
         else:
             self.title = "📅"
             self.next_item.title = f"Next: {next_ev['title']} in {_format_countdown(seconds_until)}"
