@@ -10,6 +10,7 @@ import rumps
 
 from autojoiner import (
     CONFIG_PATH,
+    EK_STATUS_TENTATIVE,
     STATE_DIR,
     fetch_events,
     find_zoom_url,
@@ -80,6 +81,9 @@ class ZoomAutoJoiner(rumps.App):
         self.toggle_item = rumps.MenuItem("Auto-Join Enabled", callback=self.toggle_autojoin)
         self.toggle_item.state = 1
 
+        self.tentative_item = rumps.MenuItem("Join Tentative Meetings", callback=self.toggle_tentative)
+        self.tentative_item.state = not self.config.get("skip_tentative", False)
+
         self.upcoming_separator = rumps.MenuItem("─── Upcoming ───")
         self.upcoming_separator.set_callback(None)
 
@@ -87,6 +91,7 @@ class ZoomAutoJoiner(rumps.App):
             self.next_item,
             None,
             self.toggle_item,
+            self.tentative_item,
             None,
             self.upcoming_separator,
             # Dynamic meeting items inserted here
@@ -147,12 +152,15 @@ class ZoomAutoJoiner(rumps.App):
             skipped = _get_skipped_today()
 
             zoom_meetings = []
+            skip_tentative = not self.tentative_item.state
             for ev in events:
                 if ev["id"] in joined or ev["id"] in skipped:
                     continue
                 if ev["end"] <= now:
                     continue
                 if any(kw in ev["title"].lower() for kw in skip_kw):
+                    continue
+                if skip_tentative and ev.get("attendee_status") == EK_STATUS_TENTATIVE:
                     continue
                 zoom_url = find_zoom_url(ev)
                 if not zoom_url:
@@ -281,6 +289,14 @@ class ZoomAutoJoiner(rumps.App):
         status = "enabled" if self.autojoin_enabled else "paused"
         rumps.notification("Zoom Auto-Joiner", "", f"Auto-join {status}")
         log.info("Auto-join %s", status)
+
+    def toggle_tentative(self, sender):
+        sender.state = not sender.state
+        action = "joining" if sender.state else "skipping"
+        rumps.notification("Zoom Auto-Joiner", "", f"Now {action} tentative meetings")
+        log.info("Tentative meetings: %s", action)
+        thread = threading.Thread(target=self._refresh_meetings, daemon=True)
+        thread.start()
 
     def on_refresh(self, _):
         self.next_item.title = "Refreshing..."

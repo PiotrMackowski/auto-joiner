@@ -38,8 +38,11 @@ def _setup_logging(config: dict):
 log = logging.getLogger("autojoiner")
 
 ZOOM_URL_RE = re.compile(
-    r"https?://[\w.-]*zoom\.us/j/(\d+)(?:\?([^\s\"'<>]+))?", re.IGNORECASE
+    r"https?://[\w.-]*zoom\.us/[jw]/(\d+)(?:\?([^\s\"'<>]+))?", re.IGNORECASE
 )
+
+# EventKit participant statuses
+EK_STATUS_TENTATIVE = 4  # EKParticipantStatusTentative
 
 
 def load_config() -> dict:
@@ -88,11 +91,17 @@ def fetch_events(store, lookahead_min: int = 30, lookback_min: int = 0) -> list[
     for e in raw:
         if e.isAllDay():
             continue
+        # Skip cancelled events (EKEventStatusCanceled = 3)
+        if e.status() == 3:
+            continue
         # Skip declined meetings
         declined = False
+        attendee_status = None
         for a in (e.attendees() or []):
-            if a.isCurrentUser() and a.participantStatus() == EventKit.EKParticipantStatusDeclined:
-                declined = True
+            if a.isCurrentUser():
+                if a.participantStatus() == EventKit.EKParticipantStatusDeclined:
+                    declined = True
+                attendee_status = a.participantStatus()
                 break
         if declined:
             continue
@@ -108,6 +117,7 @@ def fetch_events(store, lookahead_min: int = 30, lookback_min: int = 0) -> list[
                 ),
                 "location": str(e.location() or ""),
                 "notes": str(e.notes() or ""),
+                "attendee_status": attendee_status,
             }
         )
     events.sort(key=lambda x: x["start"])
@@ -126,7 +136,7 @@ def find_zoom_url(event: dict) -> str | None:
 
 
 def to_zoommtg(url: str) -> str:
-    """Convert https://...zoom.us/j/123?pwd=x to zoommtg:// deep link."""
+    """Convert https://...zoom.us/j/123?pwd=x or /w/123 to zoommtg:// deep link."""
     m = ZOOM_URL_RE.search(url)
     if not m:
         return url
@@ -167,7 +177,7 @@ def is_in_meeting(events: list[dict], now: datetime.datetime) -> bool:
     """Check if we're currently inside a meeting we already joined."""
     joined = get_joined_today()
     for ev in events:
-        if ev["id"] in joined and ev["start"] <= now <= ev["end"]:
+        if ev["id"] in joined and ev["start"] <= now < ev["end"]:
             zoom = find_zoom_url(ev)
             if zoom:
                 return True
@@ -195,6 +205,7 @@ def check_and_join(store, config: dict):
     join_early = config.get("join_early_minutes", 0)
     skip_kw = [k.lower() for k in config.get("skip_keywords", [])]
     do_notify = config.get("notify_before_join", True)
+    skip_tentative = config.get("skip_tentative", False)
 
     # Fetch with lookback (late invites) and extra lookahead (ongoing detection)
     events = fetch_events(store, lookahead_min=max(lookahead, 60), lookback_min=lookback)
@@ -214,6 +225,8 @@ def check_and_join(store, config: dict):
         if ev["end"] <= now:
             continue  # already ended
         if any(kw in ev["title"].lower() for kw in skip_kw):
+            continue
+        if skip_tentative and ev.get("attendee_status") == EK_STATUS_TENTATIVE:
             continue
 
         zoom_url = find_zoom_url(ev)
